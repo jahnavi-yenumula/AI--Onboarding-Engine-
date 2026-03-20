@@ -5,6 +5,15 @@ from extractor import extract_text_from_pdf, parse_skills_with_llm, parse_jd_wit
 from adaptive_logic import calculate_skill_gap, map_gaps_to_courses 
 
 app = FastAPI(title="AI Onboarding Engine API")
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, you'd limit this to your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 class PathwayRequest(BaseModel):
     resume_data: dict
     jd_data: dict
