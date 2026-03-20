@@ -40,10 +40,13 @@ if not gaps:
 else:
     # 2. Map gaps to the catalog
     from adaptive_logic import map_gaps_to_courses
-    final_pathway = map_gaps_to_courses(gaps)
+    result = map_gaps_to_courses(gaps)
+    final_pathway = result["pathway"]
+    total_time = result["total_time"]
     
-    print(f"⚠️ Generated Personalized Learning Pathway ({len(final_pathway)} Modules):\n")
+    print(f"⚠️ Generated Personalized Learning Pathway ({len(final_pathway)} Modules):")
+    print(f"⏱️ Estimated Total Time: {total_time} Hours\n")
     for step, course in enumerate(final_pathway, 1):
-        print(f"Step {step}: [{course['course_id']}] {course['course_title']} ({course['duration']})")
-        print(f"  -> Reasoning: {course['reasoning_trace']}\n")
-      
+      print(f"Step {step}: [{course['course_id']}] {course['course_title']} ({course['duration']})")
+      print(f"  → Priority: {course['priority_label']}")
+      print(f"  → Reason: {course['reasoning_trace']}\n")
