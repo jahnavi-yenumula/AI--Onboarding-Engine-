@@ -1,7 +1,0 @@
-fastapi
-uvicorn
-pdfplumber
-langchain
-langchain-community
-python-multipart
-pandas
