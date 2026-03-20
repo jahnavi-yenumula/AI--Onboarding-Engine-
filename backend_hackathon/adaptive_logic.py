@@ -17,6 +17,13 @@ LEVEL_MAP = {
 from thefuzz import process
 
 # ... (keep your LEVEL_MAP up here) ...
+def get_priority_label(score):
+    if score >= 7:
+        return "High"
+    elif score >= 4:
+        return "Medium"
+    else:
+        return "Low"
 
 def calculate_skill_gap(resume_json, jd_json):
     # 1. Convert resume skills into a flat dictionary
@@ -61,7 +68,7 @@ def calculate_skill_gap(resume_json, jd_json):
                 "target_level": req_level_num,
                 "gap_score": gap_magnitude,
                 "priority_score": priority_score,
-                "reasoning_trace": f"Resume indicates level {trainee_level_num}, but JD requires level {req_level_num} ({req_level_str})."
+                "reasoning_trace": f"You are currently at level {trainee_level_num}, but the role requires level {req_level_num}. This skill is prioritized due to its importance in the role."
             })
             
     skill_gaps = sorted(skill_gaps, key=lambda x: x["priority_score"], reverse=True)  
@@ -92,6 +99,7 @@ def add_prerequisites(skill_gaps):
     return skill_gaps + new_gaps
 
 def map_gaps_to_courses(skill_gaps):
+    total_time = 0
     """
     Takes the identified skill gaps and maps them to real courses 
     from the company's course catalog.
@@ -123,15 +131,18 @@ def map_gaps_to_courses(skill_gaps):
        
             
         for course in recommended_courses:
+          hours = int(course['duration'].split()[0])
+          total_time += hours
           final_learning_pathway.append({
             "course_id": course['course_id'],
             "course_title": course['title'],
             "duration": course['duration'],
             "skill_addressed": module_name,
             "priority_score": gap.get("priority_score"),
-            "level": course['difficulty_level'],  # ✅ NEW
+            "priority_label": get_priority_label(gap.get("priority_score")),
+            "level": course['difficulty_level'],
             "reasoning_trace": gap['reasoning_trace']
-    })
+})
 
     
 
@@ -140,4 +151,7 @@ def map_gaps_to_courses(skill_gaps):
       key=lambda x: (-x["priority_score"], x["level"])
 )        
 
-    return final_learning_pathway
+    return {
+    "pathway": final_learning_pathway,
+    "total_time": total_time
+}

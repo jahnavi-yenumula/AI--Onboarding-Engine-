@@ -93,15 +93,17 @@ async def generate_pathway(request: PathwayRequest):
                 "pathway": []
             }
             
-        # 3. Map the identified gaps to the course catalog
-        final_pathway = map_gaps_to_courses(gaps)
+        result = map_gaps_to_courses(gaps)
+        final_pathway = result["pathway"]
+        total_time = result["total_time"]
         
         # 4. Return the data to the frontend UI
         return {
-            "status": "success",
-            "total_modules": len(final_pathway),
-            "pathway": final_pathway
-        }
+         "status": "success",
+         "total_modules": len(final_pathway),
+         "estimated_hours": total_time,
+         "pathway": final_pathway
+}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate pathway: {str(e)}")
