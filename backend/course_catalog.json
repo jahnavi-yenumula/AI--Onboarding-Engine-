@@ -1,0 +1,46 @@
+{
+  "courses": [
+    {
+      "course_id": "SPRING-101",
+      "skill_tag": "Spring Boot",
+      "difficulty_level": 1,
+      "title": "Spring Boot Fundamentals: Building REST APIs",
+      "duration": "4 Hours"
+    },
+    {
+      "course_id": "SPRING-201",
+      "skill_tag": "Spring Boot",
+      "difficulty_level": 2,
+      "title": "Advanced Spring Boot & Microservices",
+      "duration": "6 Hours"
+    },
+    {
+      "course_id": "SQL-101",
+      "skill_tag": "SQL",
+      "difficulty_level": 1,
+      "title": "Introduction to Databases & Basic Queries",
+      "duration": "3 Hours"
+    },
+    {
+      "course_id": "SQL-201",
+      "skill_tag": "SQL",
+      "difficulty_level": 2,
+      "title": "Intermediate SQL: Joins, Subqueries, and Indexing",
+      "duration": "5 Hours"
+    },
+    {
+      "course_id": "POSTGRES-101",
+      "skill_tag": "PostgreSQL",
+      "difficulty_level": 1,
+      "title": "PostgreSQL Quickstart for Developers",
+      "duration": "2 Hours"
+    },
+    {
+      "course_id": "JAVA-301",
+      "skill_tag": "Java",
+      "difficulty_level": 3,
+      "title": "Enterprise Java Architecture",
+      "duration": "8 Hours"
+    }
+  ]
+}
