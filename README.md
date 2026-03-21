@@ -45,7 +45,11 @@ cd <repo-folder>
 # 2. Double-click setup.bat  OR  run in Command Prompt:
 setup.bat
 ```
-
+note:If frontend dependencies are not installed properly, run:
+```bash
+cd frontend
+npm install
+```
 Setup takes 2–3 minutes on first run. It creates the Python virtual environment and installs all frontend packages automatically.
 
 ---
