@@ -2,7 +2,11 @@ import pandas as pd
 from thefuzz import process
 
 class SkillStandardizer:
-    def __init__(self, file_path='backend/data/Technology Skills.txt'):
+    def __init__(self, file_path=None):
+        if file_path is None:
+            # Resolve relative to this file's location
+            import os
+            file_path = os.path.join(os.path.dirname(__file__), 'data', 'Technology Skills.txt')
         try:
             # O*NET .txt files are usually tab-separated
             df = pd.read_csv(file_path, sep='\t')

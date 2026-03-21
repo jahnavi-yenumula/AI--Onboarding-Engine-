@@ -1,9 +1,9 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   CheckCircle2, Circle, ChevronRight, Sparkles, BookOpen,
-  Brain, Target, Clock, Star, PlayCircle, Lock, Zap, ArrowLeft
+  Brain, Target, Clock, Star, PlayCircle, Lock, Zap, ArrowLeft, HelpCircle
 } from "lucide-react";
 import { useApp } from "@/lib/app-context";
 import type { Task } from "@/lib/app-context";
@@ -17,6 +17,7 @@ const statusConfig = {
 
 export default function LearningPage() {
   const { roadmap, setCurrentPage, tasks, setTasks } = useApp();
+  const [expandedTrace, setExpandedTrace] = useState<number | null>(null);
 
   // Initialize tasks from the roadmap only if tasks haven't been set yet
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function LearningPage() {
         description: item.description || "Personalized AI-generated content",
         scheduledDate: item.date || undefined,
         hoursPerDay: item.hours_to_do || undefined,
+        reasoningTrace: item.reasoning_trace || undefined,
       }));
       setTasks(formattedTasks);
     }
@@ -160,6 +162,22 @@ export default function LearningPage() {
                       )}
                     </div>
                   </div>
+                  {task.reasoningTrace && (
+                    <div className="mt-2 ml-10">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setExpandedTrace(expandedTrace === task.id ? null : task.id); }}
+                        className="flex items-center gap-1 text-[10px] text-purple-500 hover:text-purple-300 transition-colors"
+                      >
+                        <HelpCircle className="w-3 h-3" />
+                        Why this module?
+                      </button>
+                      {expandedTrace === task.id && (
+                        <p className="mt-1.5 text-[11px] text-purple-300/80 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2 leading-relaxed">
+                          {task.reasoningTrace}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>

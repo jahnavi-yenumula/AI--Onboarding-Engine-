@@ -4,9 +4,11 @@ import { motion } from "framer-motion";
 import { Brain, Mail, Lock, ChevronRight, Sparkles } from "lucide-react";
 import { useApp } from "@/lib/app-context";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useTheme } from "next-themes";
 
 export default function LoginPage() {
-  const { login, role, setRole, theme } = useApp();
+  const { login, role, setRole } = useApp();
+  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

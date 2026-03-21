@@ -24,7 +24,8 @@ def generate_daily_roadmap(courses, start_date, daily_limit, blackout_dates):
         task_queue.append({
             "title": course.get('task', 'Learning Module'), 
             "hours": hours,
-            "description": course.get('description', '')
+            "description": course.get('description', ''),
+            "reasoning_trace": course.get('reasoning_trace', ''),
         })
 
     # 2. Distribute tasks across the calendar
@@ -45,6 +46,7 @@ def generate_daily_roadmap(courses, start_date, daily_limit, blackout_dates):
                 "task": task['title'],
                 "hours_to_do": hours_assigned,
                 "description": task['description'],
+                "reasoning_trace": task.get('reasoning_trace', ''),
                 "status": "Scheduled"
             })
             

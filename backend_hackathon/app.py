@@ -29,6 +29,20 @@ class PathwayRequest(BaseModel):
     blackout_dates: List[str]
     catalog: dict = None
 
+@app.post("/api/debug-parse")
+async def debug_parse(file: UploadFile = File(...), doc_type: str = "resume"):
+    """Debug endpoint — returns raw extracted text + raw LLM output before JSON parsing."""
+    pdf_bytes = io.BytesIO(await file.read())
+    raw_text = extract_text_from_pdf(pdf_bytes)
+    from extractor import llm, prompt, jd_prompt
+    formatted = (prompt if doc_type == "resume" else jd_prompt).format(text=raw_text)
+    raw_llm = llm.invoke(formatted)
+    return {
+        "extracted_text_preview": raw_text[:500],
+        "raw_llm_output": raw_llm,
+        "char_count": len(raw_text),
+    }
+
 @app.post("/api/extract-resume")
 async def extract_resume(file: UploadFile = File(...)):
     if not file.filename.endswith('.pdf'):
@@ -42,6 +56,11 @@ async def extract_resume(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Could not extract text from PDF.")
             
         skills_data = parse_skills_with_llm(raw_text)
+        
+        print(f"[RESUME] LLM returned {len(skills_data.get('skills', []))} skills")
+        if skills_data.get('error'):
+            print(f"[RESUME] LLM error: {skills_data.get('error_details')}")
+            print(f"[RESUME] Raw output: {skills_data.get('raw_output', '')[:300]}")
         
         # Standardized return for your TrainingPage.tsx
         return {
@@ -64,6 +83,11 @@ async def extract_job_description(file: UploadFile = File(...)):
         raw_text = extract_text_from_pdf(pdf_bytes)
         
         jd_data = parse_jd_with_llm(raw_text)
+        
+        print(f"[JD] LLM returned {len(jd_data.get('required_skills', []))} required skills")
+        if jd_data.get('error'):
+            print(f"[JD] LLM error: {jd_data.get('error_details')}")
+            print(f"[JD] Raw output: {jd_data.get('raw_output', '')[:300]}")
         
         # Standardized return for your TrainingPage.tsx
         return {

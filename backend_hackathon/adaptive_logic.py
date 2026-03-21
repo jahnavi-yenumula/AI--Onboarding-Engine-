@@ -111,7 +111,8 @@ def map_gaps_to_courses(skill_gaps):
                             "skill_addressed": m_name,
                             "priority_score": gap.get("priority_score", 1),
                             "level": c.get('difficulty_level', 1),
-                            "description": f"AI-selected module for {m_name}."
+                            "description": f"AI-selected module for {m_name}.",
+                            "reasoning_trace": gap.get("reasoning_trace", ""),
                         })
                         match_found = True
 
@@ -124,7 +125,8 @@ def map_gaps_to_courses(skill_gaps):
                 "skill_addressed": m_name,
                 "priority_score": gap.get("priority_score", 1),
                 "level": t_level,
-                "description": f"Custom learning module for {m_name} based on JD gap."
+                "description": f"Custom learning module for {m_name} based on JD gap.",
+                "reasoning_trace": gap.get("reasoning_trace", ""),
             })
 
     # Sort: Higher priority and lower levels first

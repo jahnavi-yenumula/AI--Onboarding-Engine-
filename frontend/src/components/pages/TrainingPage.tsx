@@ -184,11 +184,12 @@ const handleGenerate = async () => {
               <Loader2 className="w-8 h-8 text-purple-500 animate-spin mx-auto" />
             ) : resumeData ? (
               <div className="space-y-2">
-                <CheckCircle2 className="mx-auto w-10 h-10 text-green-400" />
-                <div className="flex flex-wrap gap-1 justify-center">
-                  {resumeData.skills?.slice(0, 3).map((s: any, idx: number) => (
+                <CheckCircle2 className="mx-auto w-8 h-8 text-green-400" />
+                <p className="text-[10px] text-green-400 font-bold">{resumeData.skills?.length || 0} skills extracted</p>
+                <div className="flex flex-wrap gap-1 justify-center max-h-20 overflow-y-auto">
+                  {resumeData.skills?.map((s: any, idx: number) => (
                     <span key={idx} className="text-[9px] bg-white/5 text-purple-300 px-2 py-0.5 rounded border border-white/10">
-                      {typeof s === 'object' ? s.skill_name : s}
+                      {typeof s === 'object' ? `${s.skill_name} (${s.level})` : s}
                     </span>
                   ))}
                 </div>
@@ -218,7 +219,17 @@ const handleGenerate = async () => {
             {extractingJd ? (
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto" />
             ) : jdData ? (
-              <CheckCircle2 className="mx-auto w-10 h-10 text-blue-400" />
+              <div className="space-y-2">
+                <CheckCircle2 className="mx-auto w-8 h-8 text-blue-400" />
+                <p className="text-[10px] text-blue-400 font-bold">{jdData.requirements?.required_skills?.length || 0} requirements extracted</p>
+                <div className="flex flex-wrap gap-1 justify-center max-h-20 overflow-y-auto">
+                  {jdData.requirements?.required_skills?.map((s: any, idx: number) => (
+                    <span key={idx} className="text-[9px] bg-white/5 text-blue-300 px-2 py-0.5 rounded border border-white/10">
+                      {typeof s === 'object' ? `${s.skill_name} (${s.required_level})` : s}
+                    </span>
+                  ))}
+                </div>
+              </div>
             ) : (
               <Upload className="mx-auto w-10 h-10 text-blue-500" />
             )}

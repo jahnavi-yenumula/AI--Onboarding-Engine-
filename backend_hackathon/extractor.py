@@ -5,7 +5,7 @@ from langchain_core.prompts import PromptTemplate
 
 from standardizer import standardizer 
 
-llm = Ollama(model="llama3")
+llm = Ollama(model="llama3.2:1b")
 
 # Create a strict prompt template to force JSON output
 prompt_template = """
@@ -62,6 +62,16 @@ jd_prompt = PromptTemplate(template=jd_prompt_template, input_variables=["text"]
 
 prompt = PromptTemplate(template=prompt_template, input_variables=["text"])
 
+def _clean_json(text: str) -> str:
+    """Strip markdown fences and extract the first JSON object/array from LLM output."""
+    text = text.strip().replace('```json', '').replace('```', '').strip()
+    # Find the first { and last } to handle prose before/after JSON
+    start = text.find('{')
+    end = text.rfind('}')
+    if start != -1 and end != -1:
+        return text[start:end+1]
+    return text
+
 def extract_text_from_pdf(pdf_bytes):
     """Reads PDF file bytes and returns the raw text."""
     text = ""
@@ -84,7 +94,7 @@ def parse_skills_with_llm(document_text):
         response_text = llm.invoke(formatted_prompt)
         
         # Clean the response to ensure it's pure JSON
-        clean_json = response_text.strip().replace('```json', '').replace('```', '')
+        clean_json = _clean_json(response_text)
         skills_json = json.loads(clean_json)
 
         # --- NEW CODE START: Standardization Loop ---
@@ -112,7 +122,7 @@ def parse_jd_with_llm(document_text):
     
     try:
         response_text = llm.invoke(formatted_prompt)
-        clean_json = response_text.strip().replace('```json', '').replace('```', '')
+        clean_json = _clean_json(response_text)
         return json.loads(clean_json)
         
     except Exception as e:
