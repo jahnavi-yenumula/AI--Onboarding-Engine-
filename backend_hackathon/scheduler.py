@@ -4,6 +4,8 @@ def generate_daily_roadmap(courses, start_date, daily_limit, blackout_dates):
     """
     Distributes course hours across available days, skipping blackout dates.
     """
+    if not daily_limit or daily_limit <= 0:
+        raise ValueError("daily_commitment must be greater than 0.")
     roadmap = []
     current_date = start_date
     task_queue = []

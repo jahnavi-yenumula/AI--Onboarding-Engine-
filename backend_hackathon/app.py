@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel 
-import io
+import io, json, os
 from datetime import datetime
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +27,7 @@ class PathwayRequest(BaseModel):
     start_date: str 
     daily_commitment: float
     blackout_dates: List[str]
+    catalog: dict = None
 
 @app.post("/api/extract-resume")
 async def extract_resume(file: UploadFile = File(...)):
@@ -75,15 +76,53 @@ async def extract_job_description(file: UploadFile = File(...)):
         print(f"Error extracting JD: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/upload-catalog")
+async def upload_catalog(file: UploadFile = File(...)):
+    if not file.filename.endswith('.json'):
+        raise HTTPException(status_code=400, detail="Only JSON files are supported.")
+    try:
+        content = await file.read()
+        catalog = json.loads(content)
+        if "courses" not in catalog or not isinstance(catalog["courses"], list):
+            raise HTTPException(status_code=400, detail="Invalid catalog format. Must have a 'courses' array.")
+        catalog_path = os.path.join(os.path.dirname(__file__), 'course_catalog.json')
+        with open(catalog_path, 'w') as f:
+            json.dump(catalog, f, indent=2)
+        return {"status": "success", "courses_loaded": len(catalog["courses"])}
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON file.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/catalog")
+async def get_catalog():
+    try:
+        catalog_path = os.path.join(os.path.dirname(__file__), 'course_catalog.json')
+        with open(catalog_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/generate-pathway")
 async def generate_pathway(request: PathwayRequest):
     try:
-        # 1. DEBUG: Print what the frontend sent
         print(f"--- GENERATING PATHWAY ---")
         print(f"Resume Data received: {list(request.resume_data.keys())}")
         print(f"JD Data received: {list(request.jd_data.keys())}")
 
-        # 2. Logic Chain
+        # If a catalog was sent from the frontend, write it temporarily for this request
+        catalog_path = os.path.join(os.path.dirname(__file__), 'course_catalog.json')
+        if request.catalog:
+            print(f"Using recruiter-supplied catalog ({len(request.catalog.get('courses', []))} courses)")
+            original_catalog = None
+            try:
+                with open(catalog_path, 'r') as f:
+                    original_catalog = f.read()
+            except Exception:
+                pass
+            with open(catalog_path, 'w') as f:
+                json.dump(request.catalog, f)
+
         gaps = calculate_skill_gap(request.resume_data, request.jd_data)
         print(f"Gaps found: {len(gaps)}")
         
@@ -99,6 +138,11 @@ async def generate_pathway(request: PathwayRequest):
             request.daily_commitment, 
             blackouts
         )
+
+        # Restore original catalog if we swapped it
+        if request.catalog and original_catalog is not None:
+            with open(catalog_path, 'w') as f:
+                f.write(original_catalog)
         
         print(f"Roadmap generated with {len(daily_roadmap)} days.")
         
@@ -108,7 +152,6 @@ async def generate_pathway(request: PathwayRequest):
         }
         
     except Exception as e:
-        # This will print the exact line number and error in your terminal
         import traceback
         print(traceback.format_exc()) 
         raise HTTPException(status_code=500, detail=f"Logic Error: {str(e)}")
