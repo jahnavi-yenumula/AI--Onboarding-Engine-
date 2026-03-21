@@ -1,56 +1,60 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel 
 import io
-from extractor import extract_text_from_pdf, parse_skills_with_llm, parse_jd_with_llm
-from adaptive_logic import calculate_skill_gap, map_gaps_to_courses 
-
-app = FastAPI(title="AI Onboarding Engine API")
+from datetime import datetime
+from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 
+# Import your custom modules
+from extractor import extract_text_from_pdf, parse_skills_with_llm, parse_jd_with_llm
+from adaptive_logic import calculate_skill_gap, add_prerequisites, map_gaps_to_courses 
+from scheduler import generate_daily_roadmap
+
+app = FastAPI(title="AI Onboarding Engine API")
+
+# CORS Setup - Essential for your Next.js frontend to talk to this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, you'd limit this to your frontend URL
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 class PathwayRequest(BaseModel):
     resume_data: dict
     jd_data: dict
+    start_date: str 
+    daily_commitment: float
+    blackout_dates: List[str]
+
 @app.post("/api/extract-resume")
 async def extract_resume(file: UploadFile = File(...)):
-    """
-    Endpoint to upload a PDF resume and return extracted skills in JSON.
-    """
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
     
     try:
-        # Read the file into memory
         pdf_bytes = io.BytesIO(await file.read())
-        
-        # 1. Extract raw text from the PDF
         raw_text = extract_text_from_pdf(pdf_bytes)
         
         if not raw_text.strip():
-            raise HTTPException(status_code=400, detail="Could not extract text from this PDF.")
+            raise HTTPException(status_code=400, detail="Could not extract text from PDF.")
             
-        # 2. Send text to the LLM for structured extraction
         skills_data = parse_skills_with_llm(raw_text)
         
+        # Standardized return for your TrainingPage.tsx
         return {
-            "filename": file.filename,
             "status": "success",
-            "extracted_data": skills_data
+            "skills": skills_data.get("skills", []), # Changed key to 'skills'
+            "raw_analysis": skills_data
         }
         
     except Exception as e:
+        print(f"Error extracting resume: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/extract-jd")
 async def extract_job_description(file: UploadFile = File(...)):
-    """
-    Endpoint to upload a PDF Job Description and return required skills in JSON.
-    """
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
     
@@ -58,52 +62,53 @@ async def extract_job_description(file: UploadFile = File(...)):
         pdf_bytes = io.BytesIO(await file.read())
         raw_text = extract_text_from_pdf(pdf_bytes)
         
-        if not raw_text.strip():
-            raise HTTPException(status_code=400, detail="Could not extract text from this PDF.")
-            
         jd_data = parse_jd_with_llm(raw_text)
         
+        # Standardized return for your TrainingPage.tsx
         return {
-            "filename": file.filename,
             "status": "success",
-            "extracted_requirements": jd_data
+            "job_title": jd_data.get("job_title", "Custom Role"), # Changed key to 'job_title'
+            "requirements": jd_data
         }
         
     except Exception as e:
+        print(f"Error extracting JD: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/generate-pathway")
 async def generate_pathway(request: PathwayRequest):
-    """
-    Endpoint that takes extracted Resume JSON and JD JSON, 
-    calculates the skill gap, and returns the final mapped learning pathway.
-    """
     try:
-        # 1. Calculate the numerical skill gaps
-        gaps = calculate_skill_gap(request.resume_data, request.jd_data)
+        # 1. DEBUG: Print what the frontend sent
+        print(f"--- GENERATING PATHWAY ---")
+        print(f"Resume Data received: {list(request.resume_data.keys())}")
+        print(f"JD Data received: {list(request.jd_data.keys())}")
 
-        from adaptive_logic import add_prerequisites
-        gaps = add_prerequisites(gaps)
+        # 2. Logic Chain
+        gaps = calculate_skill_gap(request.resume_data, request.jd_data)
+        print(f"Gaps found: {len(gaps)}")
         
-        # 2. Handle the edge case of a perfect candidate
-        if not gaps:
-            return {
-                "status": "success", 
-                "message": "Trainee is perfectly matched! No onboarding required.", 
-                "total_modules": 0,
-                "pathway": []
-            }
-            
-        result = map_gaps_to_courses(gaps)
-        final_pathway = result["pathway"]
-        total_time = result["total_time"]
+        gaps_with_prereqs = add_prerequisites(gaps)
+        courses = map_gaps_to_courses(gaps_with_prereqs)
         
-        # 4. Return the data to the frontend UI
+        start_dt = datetime.strptime(request.start_date, "%Y-%m-%d").date()
+        blackouts = [datetime.strptime(d, "%Y-%m-%d").date() for d in request.blackout_dates]
+        
+        daily_roadmap = generate_daily_roadmap(
+            courses, 
+            start_dt, 
+            request.daily_commitment, 
+            blackouts
+        )
+        
+        print(f"Roadmap generated with {len(daily_roadmap)} days.")
+        
         return {
-         "status": "success",
-         "total_modules": len(final_pathway),
-         "estimated_hours": total_time,
-         "pathway": final_pathway
-}
+            "status": "success",
+            "roadmap": daily_roadmap
+        }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate pathway: {str(e)}")
+        # This will print the exact line number and error in your terminal
+        import traceback
+        print(traceback.format_exc()) 
+        raise HTTPException(status_code=500, detail=f"Logic Error: {str(e)}")
